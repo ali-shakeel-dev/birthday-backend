@@ -2,7 +2,8 @@ class WishesController < ApplicationController
   before_action :authorize_request
 
   def index
-    render json: @current_user.wishes
+    wishes = @current_user.wishes.order(created_at: :desc)
+    render json: wishes
   end
 
   def create
@@ -32,14 +33,14 @@ class WishesController < ApplicationController
   private
 
   def wish_params
-    params.permit(:name, :email, :birthday, :time, :style)
+    params.require(:wish).permit(:name, :email, :birthday, :time, :style)
   end
 
   def authorize_request
     header = request.headers['Authorization']
     token = header.split(' ').last if header
     begin
-      decoded = JWT.decode(token, Rails.application.secrets.secret_key_base)[0]
+      decoded = JWT.decode(token, Rails.application.credentials.secret_key_base)[0]
       @current_user = User.find(decoded['user_id'])
     rescue
       render json: { error: 'Unauthorized' }, status: :unauthorized
